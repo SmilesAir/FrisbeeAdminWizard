@@ -1,0 +1,14 @@
+
+.wizardTop {
+    .pageTop {
+        .header {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+        }
+    }
+}
