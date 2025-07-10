@@ -11,4 +11,9 @@
             flex-direction: column;
         }
     }
+
+    .publishRankingWidget {
+        display: flex;
+        flex-direction: row;
+    }
 }
