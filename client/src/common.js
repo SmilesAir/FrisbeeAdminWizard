@@ -307,16 +307,27 @@ Common.publishRankingsAndRatings = function() {
         "Mixed",
         "Mixed Pairs",
     ]
-    calculateRankings()
-}
 
-function calculateRankings() {
     let startDate = new Date()
     startDate.setFullYear(startDate.getFullYear() - 2)
 
+    let now = new Date()
+    let todayDate = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+
+    let openRankings = calculateRankings(startDate, EnumStore.ERankingType.Open)
+    Common.uploadPointsData("UPLOAD_POINTS_DATA", todayDate, "open", "ranking", openRankings)
+
+    let womenRankings = calculateRankings(startDate, EnumStore.ERankingType.Women)
+    Common.uploadPointsData("UPLOAD_POINTS_DATA", todayDate, "women", "ranking", womenRankings)
+
+    let openRatings = calculateRatings()
+    Common.uploadPointsData("UPLOAD_POINTS_DATA", todayDate, "open", "rating", openRatings)
+}
+
+function getSortedResultsData(startDate) {
     let sortedEventSummaries = []
     for (let eventData of Object.values(MainStore.eventData)) {
-        if (Date.parse(eventData.startDate) > startDate) {
+        if (startDate === undefined || Date.parse(eventData.startDate) > startDate) {
             sortedEventSummaries.push(eventData)
         }
     }
@@ -329,12 +340,18 @@ function calculateRankings() {
     for (let eventSummary of sortedEventSummaries) {
         for (let resultsData of MainStore.sortedResultsData) {
             if (resultsData.eventId === eventSummary.key && !resultsData.isHidden) {
+                resultsData.startDate = eventSummary.startDate
                 sortedResultsData.push(resultsData)
             }
         }
     }
 
-    let rankingType = EnumStore.ERankingType.Open
+    return sortedResultsData
+}
+
+function calculateRankings(startDate, rankingType) {
+    let sortedResultsData = getSortedResultsData(startDate)
+
     let playerRankings = {}
     for (let resultsData of sortedResultsData) {
         if (MainStore.rankingTypeNames[rankingType].includes(resultsData.divisionName)) {
@@ -361,7 +378,21 @@ function calculateRankings() {
         return b.points - a.points
     })
 
+    let place = 1
+    let proccsedCount = 0
+    let lastPoints = 0
+    for (let rankingData of sortedRankingList) {
+        if (rankingData.points !== lastPoints) {
+            lastPoints = rankingData.points
+            place = proccsedCount + 1
+        }
+        rankingData.rank = place
+        ++proccsedCount
+    }
+
     console.log(3, sortedRankingList)
+
+    return sortedRankingList
 }
 
 function addResultDataToRankings(playerRankings, rankingType, resultsData) {
@@ -468,6 +499,206 @@ function addResultDataToRankings(playerRankings, rankingType, resultsData) {
                 console.warn(`Couldn't find playerData for ${player.id}`)
             }
         }
+    }
+}
+
+function calculateRatings() {
+    let sortedResultsData = getSortedResultsData()
+
+    let playerRatings = {}
+    for (let resultsData of sortedResultsData) {
+        calcResultsElo(playerRatings, resultsData, resultsData.startDate)
+    }
+
+    let sortedRatingData = []
+    for (let playerId in playerRatings) {
+        sortedRatingData.push(playerRatings[playerId])
+    }
+
+    sortedRatingData = sortedRatingData.sort((a, b) => {
+        return b.rating - a.rating
+    })
+
+    console.log("output ratings", sortedRatingData)
+
+    return sortedRatingData
+}
+
+function calcResultsElo(playerRatings, resultsData, startDate) {
+    let roundIds = []
+    for (let roundId in resultsData.resultsData) {
+        if (roundId.startsWith("round")) {
+            roundIds.push(roundId)
+        }
+    }
+
+    // Can't handle more than 9 rounds
+    roundIds = roundIds.sort((a, b) => {
+        return a - b
+    })
+
+    let teamsData = []
+    for (let roundId of roundIds) {
+        let roundData = resultsData.resultsData[roundId]
+        for (let poolId in roundData) {
+            if (poolId.startsWith("pool")) {
+                let poolData = roundData[poolId]
+                for (let teamData of poolData.teamData) {
+                    let hash = teamData.players.join(",")
+                    if (teamsData.find((data) => data.hash === hash) === undefined) {
+                        teamsData.push({
+                            place: teamData.place + 1000 * parseInt(roundId.replace("round", ""), 10),
+                            players: teamData.players.slice(),
+                            hash: hash
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    teamsData = teamsData.sort((a, b) => {
+        return a.place - b.place
+    })
+
+    let kFactor = ratingKFactor
+    if (worldsNameList.find((eventName) => resultsData.eventName.includes(eventName)) !== undefined) {
+        kFactor = ratingKFactorMajor
+    } else if (majorNameList.find((eventName) => resultsData.eventName.includes(eventName)) !== undefined) {
+        kFactor = ratingKFactorWorlds
+    }
+
+    let lastHash = null
+    for (let winnerIndex = 0; winnerIndex < teamsData.length; ++winnerIndex) {
+        let winner = teamsData[winnerIndex]
+        for (let loserIndex = winnerIndex + 1; loserIndex < teamsData.length; ++loserIndex) {
+            let loser = teamsData[loserIndex]
+            let isTie = winner.place === loser.place
+            if (!isTie || lastHash !== loser.hash) {
+                calcTeamRating(playerRatings, winner, loser, isTie ? 0 : -1, startDate, kFactor)
+                lastHash = loser.hash
+            }
+        }
+    }
+
+    let sortedPlayerRatings = []
+    for (let playerId in playerRatings) {
+        sortedPlayerRatings.push(playerRatings[playerId])
+    }
+
+    sortedPlayerRatings = sortedPlayerRatings.sort((a, b) => {
+        return b.rating - a.rating
+    })
+
+    for (let i = 0; i < sortedPlayerRatings.length; ++i) {
+        let rank = i + 1
+        let player = sortedPlayerRatings[i]
+        if (player.matchCount > 100 && (player.highestRank < 0 || rank < player.highestRank)) {
+            player.highestRank = rank
+            player.highestRankDate = startDate
+        }
+    }
+}
+
+function calcTeamRating(playerRatings, team1, team2, result, startDate, kFactor) {
+    let rating1 = calcTeamElo(playerRatings, team1)
+    let rating2 = calcTeamElo(playerRatings, team2)
+
+    let ratingResults = calcEloMatch(rating1, rating2, result, kFactor)
+    let team1Delta = ratingResults.rating1 - rating1
+
+    updateTeamRatings(playerRatings, team1, rating1, team1Delta, startDate)
+    updateTeamRatings(playerRatings, team2, rating2, -team1Delta, startDate)
+}
+
+function updateTeamRatings(playerRatings, team, originalRating, delta, startDate) {
+    for (let playerId of team.players) {
+        if (!Common.isValidGuid(playerId)) {
+            continue
+        }
+
+        let playerData = Common.getOriginalPlayerData(playerId)
+        let originalPlayerId = playerData.key
+
+        let ratingData = playerRatings[originalPlayerId]
+        // let rating = ratingData && ratingData.rating || startingElo
+        // let weight = rating / originalRating / team.players.length
+        let weight = 1 / team.players.length
+
+        if (ratingData !== undefined) {
+            ratingData.rating = Math.max(1, ratingData.rating + weight * delta)
+            ++ratingData.matchCount
+
+            if (ratingData.rating > ratingData.highestRating) {
+                ratingData.highestRating = ratingData.rating
+                ratingData.highestRatingDate = startDate
+            }
+        } else {
+            playerRatings[originalPlayerId] = {
+                fullName: Common.getFullNameFromPlayerData(playerData),
+                rating: startingElo + weight * delta,
+                matchCount: 1,
+                highestRating: startingElo + weight * delta,
+                highestRatingDate: startDate,
+                highestRank: -1,
+                highestRankDate: startDate
+            }
+        }
+    }
+}
+
+function calcTeamElo(playerRatings, team) {
+    let elo = 0
+    let numPlayers = 0
+    for (let playerId of team.players) {
+        let playerData = Common.getOriginalPlayerData(playerId)
+        if (playerData !== undefined) {
+            let player = playerRatings[playerData.key]
+            if (player !== undefined) {
+                elo += player.rating
+            } else {
+                elo += startingElo
+            }
+
+            ++numPlayers
+        }
+    }
+
+    return elo / numPlayers
+
+    // let ratings = []
+    // for (let playerId of team.players) {
+    //     let player = playerRatings[playerId]
+    //     if (player !== undefined) {
+    //         ratings.push(player.rating)
+    //     } else {
+    //         ratings.push(startingElo)
+    //     }
+    // }
+
+    // ratings = ratings.sort((a, b) => b - a)
+    // let count = 0
+    // for (let i = 0; i < ratings.length; ++i) {
+    //     let weight = i + 1
+    //     elo += ratings[i] * weight
+    //     count += weight
+    // }
+
+    // return elo / count
+}
+
+function calcEloMatch(rating1, rating2, result, kFactor) {
+    // -1 means player1 won, 1 means player2 won, 0 means draw
+    let r1 = Math.pow(10, rating1 / 400)
+    let r2 = Math.pow(10, rating2 / 400)
+    let e1 = r1 / (r1 + r2)
+    let e2 = r2 / (r1 + r2)
+    let s1 = result === 0 ? .5 : result > 0 ? 0 : 1
+    let s2 = result === 0 ? .5 : result > 0 ? 1 : 0
+
+    return {
+        rating1: rating1 + kFactor * (s1 - e1),
+        rating2: rating2 + kFactor * (s2 - e2)
     }
 }
 

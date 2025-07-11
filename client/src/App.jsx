@@ -60,8 +60,6 @@ const PublishRankingsConfirmPage = observer(class PublishRankingsConfirmPage ext
 
         setTimeout(() => {
             this.setState({ message: "Published Successful" })
-
-            console.log("publish")
         }, 1000)
     }
 
