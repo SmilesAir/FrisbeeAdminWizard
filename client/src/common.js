@@ -1,5 +1,7 @@
 /* eslint-disable no-alert */
 
+import { v4 as uuidv4 } from "uuid"
+
 import MainStore from "./mainStore.js"
 import buildUrl from "./endpoints.js"
 import EnumStore from "./enumStore.js"
@@ -742,6 +744,23 @@ Common.downloadPointsData = async function(version) {
             console.error(`Failed to download Manifest data: ${error}`)
         })
     }
+}
+
+Common.createEvent = function(eventName, startDate, endDate) {
+    let newEventId = uuidv4()
+    return Common.fetchEx("SET_EVENT_SUMMARY", {
+            eventId: newEventId
+    }, {}, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            eventName: eventName,
+            startDate: this.getDateString(startDate),
+            endDate: this.getDateString(endDate)
+        })
+    })
 }
 
 export default Common

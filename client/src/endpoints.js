@@ -11,7 +11,8 @@ if (isDev) {
         SET_EVENT_RESULTS: "https://pkbxpw400j.execute-api.us-west-2.amazonaws.com/development/setEventResults/<eventKey>/divisionName/<divisionName>",
         GET_POINTS_MANIFEST: "https://k7p1y5ntz6.execute-api.us-west-2.amazonaws.com/development/getManifest",
         GET_POINTS_DATA: "https://k7p1y5ntz6.execute-api.us-west-2.amazonaws.com/development/downloadPointsData/<key>",
-        SET_POINTS_DATA_HIDDEN: "https://k7p1y5ntz6.execute-api.us-west-2.amazonaws.com/development/setPointsDataIsHidden/<key>/isHidden/<isHidden>"
+        SET_POINTS_DATA_HIDDEN: "https://k7p1y5ntz6.execute-api.us-west-2.amazonaws.com/development/setPointsDataIsHidden/<key>/isHidden/<isHidden>",
+        SET_EVENT_SUMMARY: "https://xyf6qhiwi1.execute-api.us-west-2.amazonaws.com/development/setEventSummary/<eventId>"
     }
 } else {
     urls = {
@@ -22,7 +23,8 @@ if (isDev) {
         SET_EVENT_RESULTS: "https://v869a98rf9.execute-api.us-west-2.amazonaws.com/production/setEventResults/<eventKey>/divisionName/<divisionName>",
         GET_POINTS_MANIFEST: "https://kvq5a3et4b.execute-api.us-west-2.amazonaws.com/production/getManifest",
         GET_POINTS_DATA: "https://kvq5a3et4b.execute-api.us-west-2.amazonaws.com/production/downloadPointsData/<key>",
-        SET_POINTS_DATA_HIDDEN: "https://kvq5a3et4b.execute-api.us-west-2.amazonaws.com/production/setPointsDataIsHidden/<key>/isHidden/<isHidden>"
+        SET_POINTS_DATA_HIDDEN: "https://kvq5a3et4b.execute-api.us-west-2.amazonaws.com/production/setPointsDataIsHidden/<key>/isHidden/<isHidden>",
+        SET_EVENT_SUMMARY: "https://wyach4oti8.execute-api.us-west-2.amazonaws.com/production/setEventSummary/<eventId>"
     }
 }
 
