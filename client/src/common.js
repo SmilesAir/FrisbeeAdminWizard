@@ -746,10 +746,9 @@ Common.downloadPointsData = async function(version) {
     }
 }
 
-Common.createEvent = function(eventName, startDate, endDate) {
-    let newEventId = uuidv4()
+Common.uploadEvent = function(eventId, eventName, startDate, endDate) {
     return Common.fetchEx("SET_EVENT_SUMMARY", {
-            eventId: newEventId
+            eventId: eventId
     }, {}, {
         method: "POST",
         headers: {
@@ -757,10 +756,19 @@ Common.createEvent = function(eventName, startDate, endDate) {
         },
         body: JSON.stringify({
             eventName: eventName,
-            startDate: this.getDateString(startDate),
-            endDate: this.getDateString(endDate)
+            startDate: getDateString(new Date(startDate)),
+            endDate: getDateString(new Date(endDate))
         })
     })
+}
+
+function getDateString(date) {
+    return date.toISOString().split("T")[0]
+}
+
+Common.createEvent = function(eventName, startDate, endDate) {
+    let newEventId = uuidv4()
+    return Common.uploadEvent(newEventId, eventName, startDate, endDate)
 }
 
 export default Common

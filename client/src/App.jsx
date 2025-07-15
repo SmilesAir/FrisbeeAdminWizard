@@ -138,17 +138,17 @@ const PublishRankingsHidePage = observer(class PublishRankingsHidePage extends R
     }
 })
 
-const CreateEventPage = observer(class CreateEventPage extends React.Component {
+const CreateEditEventPage = observer(class CreateEditEventPage extends React.Component {
     constructor(props) {
         super(props)
 
         this.moreInitData = this.props.initData.callbacks.getMoreInitData()
 
         this.state = {
-            eventName: "",
-            eventStartDate: new Date(),
-            eventEndDate: new Date(),
-            isCreating: false,
+            eventName: this.moreInitData.eventData !== undefined ? this.moreInitData.eventData.eventName : "",
+            eventStartDate: this.moreInitData.eventData !== undefined ? this.moreInitData.eventData.startDate : new Date(),
+            eventEndDate: this.moreInitData.eventData !== undefined ? this.moreInitData.eventData.endDate : new Date(),
+            isUploading: false,
             message: ""
         }
     }
@@ -174,19 +174,45 @@ const CreateEventPage = observer(class CreateEventPage extends React.Component {
     }
 
     createEvent() {
-        this.setState({ isCreating: true })
+        this.setState({ isUploading: true })
 
         Common.createEvent(this.state.eventName, this.state.eventStartDate, this.state.eventEndDate).then(() => {
             this.setState({
-                 isCreating: false,
+                 isUploading: false,
                  message: "Event created succesfully"
                  })
         }).catch((error) => {
             this.setState({
-                 isCreating: false,
+                 isUploading: false,
                  message: `Error creating event: ${error}`
                  })
         })
+    }
+
+    updateEvent() {
+        this.setState({ isUploading: true })
+
+        Common.uploadEvent(this.moreInitData.eventData.key, this.state.eventName, this.state.eventStartDate, this.state.eventEndDate).then(() => {
+            this.setState({
+                 isUploading: false,
+                 message: "Event updated succesfully"
+                 })
+        }).catch((error) => {
+            this.setState({
+                 isUploading: false,
+                 message: `Error updating event: ${error}`
+                 })
+        })
+    }
+
+    getUploadButton() {
+        let buttonText = ""
+        if (this.state.isUploading) {
+            buttonText = this.props.initData.isCreate ? "Creating..." : "Updating..."
+        } else {
+            buttonText = this.props.initData.isCreate ? "Create Event" : "Update Event"
+        }
+        return <button disabled={this.state.isUploading} onClick={this.props.initData.isCreate ? () => this.createEvent() : () => this.updateEvent()}>{buttonText}</button>
     }
 
     render() {
@@ -198,18 +224,19 @@ const CreateEventPage = observer(class CreateEventPage extends React.Component {
                     <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
                 </div>
                 <div>
-                    <label>Event Name
+                    <label>
+                        Event Name
                         <input type="text" value={this.state.eventName} onChange={(e) => this.onEventNameChange(e)}/>
                     </label>
                     <label>
-                            Start Date:
+                        Start Date:
                         <DatePicker selected={this.state.eventStartDate} onChange={(e) => this.onStartDateChanged(e)}/>
                     </label>
                     <label>
                         End Date:
                         <DatePicker selected={this.state.eventEndDate} onChange={(e) => this.onEndDateChanged(e)}/>
                     </label>
-                    <button disabled={this.state.isCreating} onClick={() => this.createEvent()}>{this.state.isCreating ? "Creating..." : "Create Event"}</button>
+                    {this.getUploadButton()}
                     <div>{this.state.message}</div>
                 </div>
                 {this.getNextButton()}
@@ -218,46 +245,53 @@ const CreateEventPage = observer(class CreateEventPage extends React.Component {
     }
 })
 
-const EditEventPage = observer(class EditEventPage extends React.Component {
-    constructor() {
-        super()
-
-        this.state = {
-            message: "Publishing Rankings and Ratings..."
-        }
-    }
-
-    render() {
-        return (
-            <div className="pageTop">
-                <div className="header">
-                    <h2>{this.props.initData.title}</h2>
-                    <button>←</button>
-                    <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
-                </div>
-                Event Name
-            </div>
-        )
-    }
-})
-
 const SelectEventPage = observer(class SelectEventPage extends React.Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props)
 
         this.state = {
-            message: "Publishing Rankings and Ratings..."
+            selectedEventData: undefined
         }
+
+        this.moreInitData = this.props.initData.callbacks.getMoreInitData()
     }
 
     getNextButton() {
-        if (this.props.initData.nextPageCallback !== undefined) {
-            return <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>{this.props.initData.nextPageText}</button>
+        if (this.moreInitData.nextPageCallback !== undefined) {
+            return <button disabled={this.state.selectedEventData === undefined} onClick={() => this.moreInitData.nextPageCallback({
+                eventData: this.state.selectedEventData
+            })}>{this.moreInitData.nextPageText}</button>
         }
 
         return null
     }
 
+    selectEvent(data) {
+        this.setState({ selectedEventData: data })
+    }
+
+    getEventsWidget() {
+        let sortedEvents = Object.values(MainStore.eventData).sort((a, b) => {
+            return Date.parse(b.startDate) - Date.parse(a.startDate)
+        })
+        let eventWidgets = sortedEvents.map((data, index) => {
+            return (
+                <div key={index}>
+                    <div>{data.eventName}</div>
+                    <div>Start Date: {data.startDate}</div>
+                    <div>End Date: {data.endDate}</div>
+                    <button onClick={() => this.selectEvent(data)}>Select</button>
+                </div>
+            )
+        })
+
+        return (
+            <div>
+                {eventWidgets}
+            </div>
+        )
+    }
+
     render() {
         return (
             <div className="pageTop">
@@ -266,8 +300,8 @@ const SelectEventPage = observer(class SelectEventPage extends React.Component {
                     <button>←</button>
                     <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
                 </div>
-                Events
                 {this.getNextButton()}
+                {this.getEventsWidget()}
             </div>
         )
     }
@@ -328,7 +362,10 @@ const App = observer(class App extends React.Component {
                 },
                 {
                     targetId: 8, text: "Edit Exisiting Event Details",
-                    
+                    moreInitData: {
+                        nextPageCallback: (moreInitData) => this.onGotoPage(7, moreInitData),
+                        nextPageText: "Edit Event Details"
+                    }
                 }
             ],
             callbacks: callbacks
@@ -336,12 +373,14 @@ const App = observer(class App extends React.Component {
 
         const createEvent = {
             title: "Create New Event",
-            callbacks: callbacks
+            callbacks: callbacks,
+            isCreate: true
         }
 
         const editEvent = {
             title: "Edit Event Details",
             callbacks: callbacks,
+            isCreate: false
         }
 
         const selectEvent = {
@@ -355,8 +394,8 @@ const App = observer(class App extends React.Component {
             3: <PublishRankingsConfirmPage initData={publishConfirm}/>,
             4: <PublishRankingsHidePage initData={publishHide}/>,
             5: <Page initData={createEditEventLanding}/>,
-            6: <CreateEventPage initData={createEvent}/>,
-            7: <EditEventPage initData={editEvent}/>,
+            6: <CreateEditEventPage initData={createEvent}/>,
+            7: <CreateEditEventPage initData={editEvent}/>,
             8: <SelectEventPage initData={selectEvent}/>,
         }
 
