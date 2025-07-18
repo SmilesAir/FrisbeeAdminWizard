@@ -17,7 +17,21 @@ if (import.meta.hot) {
     );
 }
 
+history.pushState(null, null, window.location.href);
+history.back();
+window.onpopstate = () => history.forward()
+
 const landingPageId = 1
+
+function getHeaderWidget(props) {
+    return (
+        <div className="header">
+            <div className="text">{props.initData.title}</div>
+            <button>←</button>
+            <button onClick={() => props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
+        </div>
+    )
+}
 
 const Page = observer(class Page extends React.Component {
     constructor() {
@@ -26,7 +40,7 @@ const Page = observer(class Page extends React.Component {
 
     getOptions() {
         let options = this.props.initData.options.map((data, index) => {
-            return <button key={index} onClick={() => this.props.initData.callbacks.gotoPageCallback(data.targetId, data.moreInitData)}>{data.text}</button>
+            return <button className="optionButton" key={index} onClick={() => this.props.initData.callbacks.gotoPageCallback(data.targetId, data.moreInitData)}>{data.text}</button>
         })
 
         return (
@@ -39,11 +53,7 @@ const Page = observer(class Page extends React.Component {
     render() {
         return (
             <div className="pageTop">
-                <div className="header">
-                    <h2>{this.props.initData.title}</h2>
-                    <button>←</button>
-                    <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
-                </div>
+                {getHeaderWidget(this.props)}
                 {this.getOptions()}
             </div>
         )
@@ -68,13 +78,8 @@ const PublishRankingsConfirmPage = observer(class PublishRankingsConfirmPage ext
     render() {
         return (
             <div className="pageTop">
-                <div className="header">
-                    <h2>{this.props.initData.title}</h2>
-                    <button>←</button>
-                    <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
-                </div>
-                {this.state.message}
-                <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
+                {getHeaderWidget(this.props)}
+                <div className="publishConfirmMessage">{this.state.message}</div>
             </div>
         )
     }
@@ -118,7 +123,7 @@ const PublishRankingsHidePage = observer(class PublishRankingsHidePage extends R
         })
 
         return (
-            <div>
+            <div className="publishedListWidget">
                 {widgets}
             </div>
         )
@@ -127,11 +132,7 @@ const PublishRankingsHidePage = observer(class PublishRankingsHidePage extends R
     render() {
         return (
             <div className="pageTop">
-                <div className="header">
-                    <h2>{this.props.initData.title}</h2>
-                    <button>←</button>
-                    <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
-                </div>
+                {getHeaderWidget(this.props)}
                 {this.getPublishedWidgets()}
             </div>
         )
@@ -145,20 +146,12 @@ const CreateEditEventPage = observer(class CreateEditEventPage extends React.Com
         this.moreInitData = this.props.initData.callbacks.getMoreInitData()
 
         this.state = {
-            eventName: this.moreInitData.eventData !== undefined ? this.moreInitData.eventData.eventName : "",
-            eventStartDate: this.moreInitData.eventData !== undefined ? this.moreInitData.eventData.startDate : new Date(),
-            eventEndDate: this.moreInitData.eventData !== undefined ? this.moreInitData.eventData.endDate : new Date(),
+            eventName: this.moreInitData !== undefined ? this.moreInitData.eventData.eventName : "",
+            eventStartDate: this.moreInitData !== undefined ? this.moreInitData.eventData.startDate : new Date(),
+            eventEndDate: this.moreInitData !== undefined ? this.moreInitData.eventData.endDate : new Date(),
             isUploading: false,
             message: ""
         }
-    }
-
-    getNextButton() {
-        if (this.moreInitData !== undefined) {
-            return <button onClick={() => this.moreInitData.nextPageCallback()}>{this.moreInitData.nextPageText}</button>
-        }
-
-        return null
     }
 
     onStartDateChanged(e) {
@@ -218,14 +211,10 @@ const CreateEditEventPage = observer(class CreateEditEventPage extends React.Com
     render() {
         return (
             <div className="pageTop">
-                <div className="header">
-                    <h2>{this.props.initData.title}</h2>
-                    <button>←</button>
-                    <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
-                </div>
-                <div>
+                {getHeaderWidget(this.props)}
+                <div className="createEditEventWidget">
                     <label>
-                        Event Name
+                        Event Name:
                         <input type="text" value={this.state.eventName} onChange={(e) => this.onEventNameChange(e)}/>
                     </label>
                     <label>
@@ -239,7 +228,6 @@ const CreateEditEventPage = observer(class CreateEditEventPage extends React.Com
                     {this.getUploadButton()}
                     <div>{this.state.message}</div>
                 </div>
-                {this.getNextButton()}
             </div>
         )
     }
@@ -258,7 +246,7 @@ const SelectEventPage = observer(class SelectEventPage extends React.Component {
 
     getNextButton() {
         if (this.moreInitData.nextPageCallback !== undefined) {
-            return <button disabled={this.state.selectedEventData === undefined} onClick={() => this.moreInitData.nextPageCallback({
+            return <button className="optionButton" disabled={this.state.selectedEventData === undefined} onClick={() => this.moreInitData.nextPageCallback({
                 eventData: this.state.selectedEventData
             })}>{this.moreInitData.nextPageText}</button>
         }
@@ -275,18 +263,21 @@ const SelectEventPage = observer(class SelectEventPage extends React.Component {
             return Date.parse(b.startDate) - Date.parse(a.startDate)
         })
         let eventWidgets = sortedEvents.map((data, index) => {
+            let style = this.state.selectedEventData === data ? {
+                backgroundColor: "lightgreen"
+            } : null
             return (
-                <div key={index}>
+                <div className="eventWidget" style={style} key={index}>
                     <div>{data.eventName}</div>
                     <div>Start Date: {data.startDate}</div>
                     <div>End Date: {data.endDate}</div>
-                    <button onClick={() => this.selectEvent(data)}>Select</button>
+                    <button className="selectButton" onClick={() => this.selectEvent(data)}>Select</button>
                 </div>
             )
         })
 
         return (
-            <div>
+            <div className="eventListWidget">
                 {eventWidgets}
             </div>
         )
@@ -295,13 +286,148 @@ const SelectEventPage = observer(class SelectEventPage extends React.Component {
     render() {
         return (
             <div className="pageTop">
-                <div className="header">
-                    <h2>{this.props.initData.title}</h2>
-                    <button>←</button>
-                    <button onClick={() => this.props.initData.callbacks.gotoPageCallback(landingPageId)}>Return to Start</button>
-                </div>
+                {getHeaderWidget(this.props)}
                 {this.getNextButton()}
                 {this.getEventsWidget()}
+            </div>
+        )
+    }
+})
+
+const SelectResultsRoundsPage = observer(class SelectResultsRoundsPage extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.moreInitData = this.props.initData.callbacks.getMoreInitData()
+
+        this.state = {
+            rounds: [
+                ["Open Pairs", false, false, false, false ],
+                ["Open Coop", false, false, false, false ],
+                ["Mixed Pairs", false, false, false, false ],
+                ["Women Pairs", false, false, false, false ]
+            ]
+        }
+    }
+
+    onRoundCheckChanged(data, index, e) {
+        runInAction(() => {
+            data[index] = e.target.checked
+            this.setState(this.state)
+        })
+    }
+
+    getRoundsWidget() {
+        let rows = this.state.rounds.map((data, index) => {
+            return (
+                <div className="round" key={index}>
+                    <div className="division">{data[0]}: </div>
+                    <div>
+                        Finals:
+                        <input type="checkbox" checked={data[1]} onChange={(e) => this.onRoundCheckChanged(data, 1, e)}/>
+                    </div>
+                    <div>
+                        Semis:
+                        <input type="checkbox" checked={data[2]} onChange={(e) => this.onRoundCheckChanged(data, 2, e)}/>
+                    </div>
+                    <div>
+                        Quaters:
+                        <input type="checkbox" checked={data[3]} onChange={(e) => this.onRoundCheckChanged(data, 3, e)}/>
+                    </div>
+                    <div>
+                        Prelims:
+                        <input type="checkbox" checked={data[4]} onChange={(e) => this.onRoundCheckChanged(data, 4, e)}/>
+                    </div>
+                </div>
+            )
+        })
+
+        return (
+            <div className="chooseRoundsWidget">
+                <div className="desc">Select Rounds. Change be changed later</div>
+                {rows}
+            </div>
+        )
+    }
+
+    getRoundCount(dataArray) {
+        let roundCount = 0
+        for (let i = 1; i < 5; ++i) {
+            if (dataArray[i] !== true) {
+                break
+            }
+
+            ++roundCount
+        }
+
+        return roundCount
+    }
+
+    getRoundStateObj() {
+        return {
+            pairs: this.getRoundCount(this.state.rounds[0]),
+            coop: this.getRoundCount(this.state.rounds[1]),
+            mixed: this.getRoundCount(this.state.rounds[2]),
+            women: this.getRoundCount(this.state.rounds[3])
+        }
+    }
+
+    render() {
+        return (
+            <div className="pageTop">
+                {getHeaderWidget(this.props)}
+                {this.getRoundsWidget()}
+                <button className="optionButton" onClick={() => this.props.initData.callbacks.gotoPageCallback(11, {
+                        rounds: this.getRoundStateObj(),
+                        eventData: this.moreInitData.eventData
+                    })}>Start Entering Results</button>
+            </div>
+        )
+    }
+})
+
+const EditResultsPage = observer(class EditResultsPage extends React.Component {
+    constructor(props) {
+        super(props)
+
+        this.moreInitData = this.props.initData.callbacks.getMoreInitData()
+    }
+
+    render() {
+        let extraParams = ""
+        if (this.moreInitData !== undefined) {
+            if (this.moreInitData.eventData !== undefined) {
+                let eventData = this.moreInitData.eventData
+                extraParams += `&n=${eventData.eventName}&k=${eventData.key}&d=Open%20Pairs`
+            }
+            if (this.moreInitData.rounds !== undefined) {
+                extraParams += `&r=${encodeURIComponent(JSON.stringify(this.moreInitData.rounds))}`
+            }
+        }
+
+        return (
+            <div className="pageTop">
+                {getHeaderWidget(this.props)}
+                <iframe src={"https://d508y3x9kgnlw.cloudfront.net/?v=2" + extraParams} style={{ border: "0" }} allow="clipboard-write"/>
+            </div>
+        )
+    }
+})
+
+const EditPlayerPage = observer(class EditPlayerPage extends React.Component {
+    constructor() {
+        super()
+
+        this.state = {
+            message: "Publishing Rankings and Ratings..."
+        }
+    }
+
+    render() {
+        return (
+            <div className="pageTop">
+                {getHeaderWidget(this.props)}
+                <iframe src="https://d2mkj2exs79ufw.cloudfront.net/?v=2" style={{ border: "0" }} allow="clipboard-write"/>
             </div>
         )
     }
@@ -324,8 +450,8 @@ const App = observer(class App extends React.Component {
             title: "What do you want to do?",
             options: [
                 { targetId: 5, text: "Create/Edit Event Details" },
-                { targetId: 3, text: "Enter/Edit Results" },
-                { targetId: 4, text: "Update Player Details" },
+                { targetId: 9, text: "Enter/Edit Results" },
+                { targetId: 12, text: "Enter/Edit Player Details" },
                 { targetId: 2, text: "Publish/Edit Rankings" }
             ],
             callbacks: callbacks
@@ -354,11 +480,7 @@ const App = observer(class App extends React.Component {
             title: "Event Options",
             options: [
                 {
-                    targetId: 6, text: "Create New Event",
-                    moreInitData: {
-                        nextPageCallback: () => this.onGotoPage(landingPageId),
-                        nextPageText: "Return to Start"
-                    }
+                    targetId: 6, text: "Create New Event"
                 },
                 {
                     targetId: 8, text: "Edit Exisiting Event Details",
@@ -388,6 +510,42 @@ const App = observer(class App extends React.Component {
             callbacks: callbacks
         }
 
+        const resultsLanding = {
+            title: "Manage Results",
+            options: [
+                {
+                    targetId: 8, text: "Enter Event Results",
+                    moreInitData: {
+                        nextPageCallback: (moreInitData) => this.onGotoPage(10, moreInitData),
+                        nextPageText: "Start Entering Results"
+                    }
+                },
+                {
+                    targetId: 8, text: "Edit Event Results",
+                    moreInitData: {
+                        nextPageCallback: (moreInitData) => this.onGotoPage(11, moreInitData),
+                        nextPageText: "Start Editing Results"
+                    }
+                }
+            ],
+            callbacks: callbacks
+        }
+
+        const selectRounds = {
+            title: "Select Rounds played in Event",
+            callbacks: callbacks
+        }
+
+        const editResults = {
+            title: "Edit Event Results",
+            callbacks: callbacks
+        }
+
+        const editPlayer = {
+            title: "Player Details Tool",
+            callbacks: callbacks
+        }
+
         this.pages = {
             [landingPageId]: <Page initData={landing}/>,
             2: <Page initData={publishRankingsLanding}/>,
@@ -397,6 +555,10 @@ const App = observer(class App extends React.Component {
             6: <CreateEditEventPage initData={createEvent}/>,
             7: <CreateEditEventPage initData={editEvent}/>,
             8: <SelectEventPage initData={selectEvent}/>,
+            9: <Page initData={resultsLanding}/>,
+            10: <SelectResultsRoundsPage initData={selectRounds}/>,
+            11: <EditResultsPage initData={editResults}/>,
+            12: <EditPlayerPage initData={editPlayer}/>,
         }
 
         Common.downloadPlayerAndEventData()

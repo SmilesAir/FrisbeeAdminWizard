@@ -1,19 +1,131 @@
 
+html {
+  height: 100%;
+}
+body {
+  height: 90%;
+}
+
+.root {
+    height: 100%;
+}
+
 .wizardTop {
+    height: 90%;
+
     .pageTop {
+        height: 90%;
         .header {
             display: flex;
             flex-direction: row;
+            border-bottom: 1px solid black;
+            padding-bottom: 5px;
+            margin-bottom: .5em;
+
+            .text {
+                font-weight: bold;
+                font-size: 2em;
+                margin-right: 1em;
+            }
         }
 
         .options {
             display: flex;
             flex-direction: column;
         }
+
+        .optionButton {
+            font-size: 1.5em;
+            height: 2em;
+            margin: 2px;
+        }
+
+        .createEditEventWidget {
+            display: flex;
+            flex-direction: column;
+            font-size: 1.5em;
+
+            input {
+                margin-left: 2px;
+                font-size: 1em;
+            }
+        }
+
+        .eventListWidget {
+            .eventWidget {
+                display: flex;
+                flex-direction: row;
+                font-size: 1.5em;
+                border: solid 1px gray;
+                border-radius: 5px;
+                margin: 2px;
+
+                .selectButton {
+                    font-size: 1em;
+                }
+            }
+        }
+
+        .chooseRoundsWidget {
+            .desc {
+                font-size: 1.5em;
+                margin-bottom: 1em;
+            }
+
+            .round {
+                display: flex;
+                flex-direction: row;
+                font-size: 1.5em;
+
+                .division {
+                    margin-right: 5px;
+                }
+
+                input {
+                    -ms-transform: scale(1.5); /* IE */
+                    -moz-transform: scale(1.5); /* FF */
+                    -webkit-transform: scale(1.5); /* Safari and Chrome */
+                    -o-transform: scale(1.5); /* Opera */
+                    transform: scale(1.5);
+                    padding: 10px;
+                    margin-right: 15px;
+                }
+            }
+        }
+
+        .publishConfirmMessage {
+            font-size: 1.5em;
+        }
     }
 
-    .publishRankingWidget {
-        display: flex;
-        flex-direction: row;
+    .publishedListWidget {
+        .publishRankingWidget {
+            display: flex;
+            flex-direction: row;
+            font-size: 1.5em;
+            border: solid 1px gray;
+            border-radius: 5px;
+            margin: 2px;
+            padding: 5px;
+
+            div {
+                margin: 5px;
+            }
+
+            input {
+                -ms-transform: scale(1.5); /* IE */
+                -moz-transform: scale(1.5); /* FF */
+                -webkit-transform: scale(1.5); /* Safari and Chrome */
+                -o-transform: scale(1.5); /* Opera */
+                transform: scale(1.5);
+                padding: 10px;
+                margin-right: 15px;
+            }
+        }
+    }
+
+    iframe {
+        width: 100%;
+        height: 100%;
     }
 }
