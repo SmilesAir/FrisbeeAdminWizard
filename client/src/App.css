@@ -60,6 +60,10 @@ body {
                 border-radius: 5px;
                 margin: 2px;
 
+                div {
+                    margin-right: 15px;
+                }
+
                 .selectButton {
                     font-size: 1em;
                 }

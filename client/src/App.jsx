@@ -268,9 +268,10 @@ const SelectEventPage = observer(class SelectEventPage extends React.Component {
             } : null
             return (
                 <div className="eventWidget" style={style} key={index}>
-                    <div>{data.eventName}</div>
-                    <div>Start Date: {data.startDate}</div>
-                    <div>End Date: {data.endDate}</div>
+                    <div>{data.eventName}: </div>
+                    <div>{data.startDate}</div>
+                    <div>→</div>
+                    <div>{data.endDate}</div>
                     <button className="selectButton" onClick={() => this.selectEvent(data)}>Select</button>
                 </div>
             )
