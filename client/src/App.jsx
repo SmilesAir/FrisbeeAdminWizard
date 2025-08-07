@@ -570,6 +570,10 @@ const App = observer(class App extends React.Component {
             currentPageId: pageId,
             moreInitData: moreInitData
         })
+
+        if (pageId === landingPageId) {
+            Common.downloadPlayerAndEventData()
+        }
     }
 
     getMoreInitData() {
