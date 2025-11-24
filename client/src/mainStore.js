@@ -5,7 +5,6 @@ export default observable({
     eventData: {},
     resultsData: {},
     sortedResultsData: [],
-    initCount: 0,
     isRatingCalcEnabled: true,
     rankingTypeNames: [],
     publishedManifest: {}

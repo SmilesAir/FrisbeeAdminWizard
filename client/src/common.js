@@ -125,8 +125,6 @@ Common.downloadPlayerAndEventData = function() {
             MainStore.cachedDisplayNames.push(Common.getDisplayNameFromPlayerData(playerData))
         }
 
-        ++MainStore.initCount
-
         console.log("playerData", data)
     }).catch((error) => {
         console.error(`Failed to download Player data: ${error}`)
@@ -139,8 +137,6 @@ Common.downloadPlayerAndEventData = function() {
         }
     }).then((data) => {
         MainStore.eventData = data.allEventSummaryData
-
-        ++MainStore.initCount
 
         console.log("eventData", data)
     }).catch((error) => {
@@ -165,8 +161,6 @@ Common.downloadPlayerAndEventData = function() {
         MainStore.sortedResultsData = sortedResultsData.sort((a, b) => {
             return a.createdAt - b.createdAt
         })
-
-        ++MainStore.initCount
 
         console.log("resultsData", JSON.parse(JSON.stringify(MainStore.sortedResultsData)))
     }).catch((error) => {
@@ -637,6 +631,7 @@ function updateTeamRatings(playerRatings, team, originalRating, delta, startDate
             }
         } else {
             playerRatings[originalPlayerId] = {
+                id: originalPlayerId,
                 fullName: Common.getFullNameFromPlayerData(playerData),
                 rating: startingElo + weight * delta,
                 matchCount: 1,
@@ -769,6 +764,73 @@ function getDateString(date) {
 Common.createEvent = function(eventName, startDate, endDate) {
     let newEventId = uuidv4()
     return Common.uploadEvent(newEventId, eventName, startDate, endDate)
+}
+
+Common.getEventResultsAsPrettyText = function(eventId) {
+    let ret = ""
+    let summary = MainStore.eventData[eventId]
+    let divisions = MainStore.sortedResultsData.filter((data) => data.eventId === eventId)
+
+    ret += `${summary.eventName} ${summary.startDate}\r\n`
+
+    for (let div of divisions) {
+        ret += `${div.divisionName}\r\n`
+
+        let roundKeys = []
+        for (let roundKey in div.resultsData) {
+            if (roundKey.startsWith("round")) {
+                roundKeys.push(roundKey)
+            }
+        }
+
+        roundKeys.sort()
+
+        for (let roundKey of roundKeys) {
+            let round = div.resultsData[roundKey]
+            ret += `${getRoundName(roundKey)}\r\n`
+
+            let poolKeys = []
+            for (let poolKey in round) {
+                if (poolKey.startsWith("pool")) {
+                    poolKeys.push(poolKey)
+                }
+            }
+
+            poolKeys.sort()
+
+            for (let poolKey of poolKeys) {
+                let pool = round[poolKey]
+                ret += `Pool ${pool.poolId}\r\n`
+
+                for (let team of pool.teamData) {
+                    ret += `${team.place}. `
+
+                    let playerNames = []
+                    for (let player of team.players) {
+                        playerNames.push(Common.getFullNameFromPlayerData(MainStore.playerData[player]))
+                    }
+
+                    ret += playerNames.join(", ") + ` ${Math.round(team.points * 100) / 100}\r\n`
+                }
+            }
+        }
+    }
+
+    return ret
+}
+
+function getRoundName(roundKey) {
+    let roundNum = roundKey.replace("round", "")
+    switch (roundNum) {
+        case "1":
+            return "Final"
+        case "2":
+            return "Semifinal"
+        case "3":
+            return "Quarterfinal"
+        case "4":
+            return "Preliminary"
+    }
 }
 
 export default Common
